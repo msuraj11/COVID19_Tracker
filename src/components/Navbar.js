@@ -1,10 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-//import { connect } from 'react-redux';
 
 const Navbar = () => {
     return (
-        <nav className="navbar bg-danger">
+        <nav className="navbar bg-dark">
             <h1>
                 <i className="fas fa-viruses"></i>
                 COVID-19 Tracker
