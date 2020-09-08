@@ -14,28 +14,49 @@ class App extends Component {
     super(props);
     this.state = {
       summary: {},
-      byCountryData: [],
+      countryDayWise: [],
       globalData: {},
       countries: [],
-      isSummaryLoaded: false,
-      summaryError: {},
-      isCountryDataLoaded: false,
-      selectBoxValue: {},
-      countryChoosen: false
+      isLodaing: true,
+      error: {},
+      totalCountryData: {}
     }
   }
 
-  componentDidMount() {
+  getWorldSummaryData = () => {
     axios.get(`https://api.covid19api.com/summary`)
       .then(res => {
         const summary = res.data;
         const globalData = summary && summary.Global;
         const countries = summary && summary.Countries;
-        this.setState({ summary, globalData, countries, isSummaryLoaded: true, summaryError: {} });
+        this.setState({ summary, globalData, countries, isLodaing: false, error: {} });
       })
       .catch(err => {
-        this.setState({ isSummaryLoaded: false, summaryError: err });
+        this.setState({ isLodaing: false, error: err });
       })
+  };
+
+  getCountrySpecificData = (country) => {
+    axios.get(`https://api.covid19api.com/total/country/${country}`)
+      .then(res => {
+        console.log(res.data);
+        const countryDayWise = res.data;
+        const lastObj = countryDayWise[countryDayWise.length - 1];
+        const totalCountryData = !isEmpty(lastObj) ? {
+          TotalConfirmed: lastObj.Confirmed,
+          Active: lastObj.Active,
+          TotalDeaths: lastObj.Deaths,
+          Recovered: lastObj.Recovered
+        } : {};
+        this.setState({ countryDayWise, totalCountryData, isLodaing: false, error: {} });
+      })
+      .catch(err => {
+        this.setState({ isLodaing: false, error: err });
+      })
+  }
+
+  componentDidMount() {
+    this.getWorldSummaryData();
   }
 
   getCountryOptions = (countries) => {
@@ -47,10 +68,21 @@ class App extends Component {
     }));
     updatedCountriesList.unshift({icon: 'world', value: 'World', text: 'World', key: 0});
     return updatedCountriesList;
+  };
+
+  dropDownChangeHandler = (e, {value}) => {
+    console.log(value);
+    //this.setState({ isLodaing: true });
+    this.setState({ isLodaing: true, summary: {}, globalData:{}, countryDayWise: [], totalCountryData:{} });
+    if (value === 'World') { 
+      this.getWorldSummaryData();
+    } else {
+      this.getCountrySpecificData(value);
+    }
   }
   
   render() {
-    const {countryChoosen, summary, globalData, countries, isSummaryLoaded, summaryError} = this.state;
+    const {globalData, countries, totalCountryData, isLodaing, error} = this.state;
     return (
       <Fragment>
         <Navbar />
@@ -62,16 +94,21 @@ class App extends Component {
               search
               selection
               options={this.getCountryOptions(countries)}
+              onChange={this.dropDownChangeHandler}
             />
           }
-          {!countryChoosen && isSummaryLoaded && globalData && isEmpty(summaryError) ?
-            <Fragment>
-              <Cards data={globalData} />
-              <small className="mx">
-                <strong>Last Updated:</strong> {moment(summary.Countries[0].Date).format('DD.MM.YYYY HH:mm')}
-              </small>
-            </Fragment>
-            : (!isEmpty(summaryError) ? <PageNotFound /> : <Spinner />)
+          {isLodaing ?
+            <Spinner /> : ((!isEmpty(globalData) || !isEmpty(totalCountryData)) && isEmpty(error) ?
+              <Fragment>
+                <Cards data={!isEmpty(globalData) ? globalData : totalCountryData} />
+                <div className="m">
+                  <strong>Last Updated:</strong>
+                  {moment(countries[0].Date).format('DD.MM.YYYY HH:mm')}
+                </div>
+              </Fragment>
+              :
+              <PageNotFound />
+            )
           }
         </section>
       </Fragment>
