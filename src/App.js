@@ -1,6 +1,8 @@
 import React, {Fragment, Component} from 'react';
 import {isEmpty} from 'lodash';
+import moment from 'moment';
 import axios from 'axios';
+import { Dropdown } from "semantic-ui-react";
 import './App.css';
 import Navbar from './components/Navbar';
 import Cards from './components/Cards';
@@ -18,7 +20,8 @@ class App extends Component {
       isSummaryLoaded: false,
       summaryError: {},
       isCountryDataLoaded: false,
-      selectBoxValue: {}
+      selectBoxValue: {},
+      countryChoosen: false
     }
   }
 
@@ -27,21 +30,47 @@ class App extends Component {
       .then(res => {
         const summary = res.data;
         const globalData = summary && summary.Global;
-        this.setState({ summary, globalData, isSummaryLoaded: true, summaryError: {} });
+        const countries = summary && summary.Countries;
+        this.setState({ summary, globalData, countries, isSummaryLoaded: true, summaryError: {} });
       })
       .catch(err => {
         this.setState({ isSummaryLoaded: false, summaryError: err });
       })
   }
+
+  getCountryOptions = (countries) => {
+    const updatedCountriesList = countries.map(obj => ({
+      flag: obj.CountryCode.toLowerCase(),
+      value: obj.Slug,
+      text: obj.Country,
+      key: obj.CountryCode
+    }));
+    updatedCountriesList.unshift({icon: 'world', value: 'World', text: 'World', key: 0});
+    return updatedCountriesList;
+  }
   
   render() {
-    const {globalData, isSummaryLoaded, summaryError} = this.state;
+    const {countryChoosen, summary, globalData, countries, isSummaryLoaded, summaryError} = this.state;
     return (
       <Fragment>
         <Navbar />
         <section className="container">
-          {isSummaryLoaded && globalData && isEmpty(summaryError) ?
-            <Cards data={globalData} lastUpdated="today" />
+          {!isEmpty(countries) &&
+            <Dropdown
+              placeholder="Select Country / World"
+              fluid
+              search
+              selection
+              options={this.getCountryOptions(countries)}
+            />
+          }
+          {!countryChoosen && isSummaryLoaded && globalData && isEmpty(summaryError) ?
+            <Fragment>
+              <Cards data={globalData} />
+              <small className="mx">
+                <strong>Last Updated:</strong> {moment(summary.Countries[0].Date).format('DD.MM.YYYY HH:mm')}
+              </small>
+            </Fragment>
             : (!isEmpty(summaryError) ? <PageNotFound /> : <Spinner />)
           }
         </section>
