@@ -129,10 +129,14 @@ img {
   display: inline-block;
   margin: 0.45rem;
   border: 1px solid #eee;
-  border-radius: 4px;
-  box-shadow: 0 2px 2px #ccc;
+  border-radius: 6px;
+  box-shadow: 0 3px 3px #ccc;
   width: 12.5rem;
   padding: 0.8rem;
+}
+
+.charts {
+  display: flex;
 }
 
 .ui.fluid.dropdown {

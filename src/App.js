@@ -1,5 +1,5 @@
 import React, {Fragment, Component} from 'react';
-import {isEmpty} from 'lodash';
+import {isEmpty, omit, map} from 'lodash';
 import moment from 'moment';
 import axios from 'axios';
 import { Dropdown } from "semantic-ui-react";
@@ -8,6 +8,8 @@ import Navbar from './components/Navbar';
 import Cards from './components/Cards';
 import Spinner from './components/Spinner';
 import PageNotFound from './components/PageNotFound';
+import WorldDataCharts from './components/WorldDataCharts';
+import {deafultBarChartOptionsObj, defaultDonutOptions} from './utils/helper';
 
 class App extends Component {
   constructor(props) {
@@ -17,9 +19,16 @@ class App extends Component {
       countryDayWise: [],
       globalData: {},
       countries: [],
-      isLodaing: true,
+      euCountries: [],
+      americas: [],
+      asiaPacific: [],
+      isLoading: true,
       error: {},
-      totalCountryData: {}
+      totalCountryData: {},
+      overallBarChartOptions: {...deafultBarChartOptionsObj},
+      overallBarChartSeries: [],
+      overallDontOptions: {...defaultDonutOptions},
+      overallDonutSeries: []
     }
   }
 
@@ -28,18 +37,28 @@ class App extends Component {
       .then(res => {
         const summary = res.data;
         const globalData = summary && summary.Global;
+        const omitNewData = omit(globalData, ['NewConfirmed', 'NewDeaths', 'NewRecovered']);
         const countries = summary && summary.Countries;
-        this.setState({ summary, globalData, countries, isLodaing: false, error: {} });
+        this.setState({ summary, globalData, countries, isLoading: false, error: {},
+            overallBarChartOptions: {
+              ...this.state.overallBarChartOptions,
+              xaxis: {
+                ...this.state.overallBarChartOptions.xaxis,
+                categories: Object.keys(omitNewData)
+              }
+            },
+            overallBarChartSeries: [{ data: Object.values(omitNewData) }],
+            overallDonutSeries: Object.values(omitNewData)
+        });
       })
       .catch(err => {
-        this.setState({ isLodaing: false, error: err });
+        this.setState({ isLoading: false, error: err });
       })
   };
 
   getCountrySpecificData = (country) => {
     axios.get(`https://api.covid19api.com/total/country/${country}`)
       .then(res => {
-        console.log(res.data);
         const countryDayWise = res.data;
         const lastObj = countryDayWise[countryDayWise.length - 1];
         const totalCountryData = !isEmpty(lastObj) ? {
@@ -48,10 +67,10 @@ class App extends Component {
           TotalDeaths: lastObj.Deaths,
           Recovered: lastObj.Recovered
         } : {};
-        this.setState({ countryDayWise, totalCountryData, isLodaing: false, error: {} });
+        this.setState({ countryDayWise, totalCountryData, isLoading: false, error: {} });
       })
       .catch(err => {
-        this.setState({ isLodaing: false, error: err });
+        this.setState({ isLoading: false, error: err });
       })
   }
 
@@ -71,9 +90,7 @@ class App extends Component {
   };
 
   dropDownChangeHandler = (e, {value}) => {
-    console.log(value);
-    //this.setState({ isLodaing: true });
-    this.setState({ isLodaing: true, summary: {}, globalData:{}, countryDayWise: [], totalCountryData:{} });
+    this.setState({ isLoading: true, summary: {}, globalData:{}, countryDayWise: [], totalCountryData:{} });
     if (value === 'World') { 
       this.getWorldSummaryData();
     } else {
@@ -82,7 +99,7 @@ class App extends Component {
   }
   
   render() {
-    const {globalData, countries, totalCountryData, isLodaing, error} = this.state;
+    const {globalData, countries, totalCountryData, isLoading, error} = this.state;
     return (
       <Fragment>
         <Navbar />
@@ -97,18 +114,27 @@ class App extends Component {
               onChange={this.dropDownChangeHandler}
             />
           }
-          {isLodaing ?
-            <Spinner /> : ((!isEmpty(globalData) || !isEmpty(totalCountryData)) && isEmpty(error) ?
-              <Fragment>
-                <Cards data={!isEmpty(globalData) ? globalData : totalCountryData} />
-                <div className="m">
-                  <strong>Last Updated:</strong>
-                  {moment(countries[0].Date).format('DD.MM.YYYY HH:mm')}
-                </div>
-              </Fragment>
-              :
-              <PageNotFound />
-            )
+          {isLoading ?
+            <Spinner /> :
+              ((!isEmpty(globalData) || !isEmpty(totalCountryData)) && isEmpty(error) ?
+                <Fragment>
+                  <Cards data={!isEmpty(globalData) ? globalData : totalCountryData} />
+                  <div className="m">
+                    <strong>Last Updated:</strong>
+                    {moment(countries[0].Date).format('DD.MM.YYYY HH:mm')}
+                  </div>
+                </Fragment>
+                :
+                <PageNotFound />
+              )
+          }
+          {!isEmpty(globalData) ?
+            <WorldDataCharts
+              overallBarChartOptions={this.state.overallBarChartOptions}
+              overallBarChartSeries={this.state.overallBarChartSeries}
+              overallDontOptions={this.state.overallDontOptions}
+              overallDonutSeries={this.state.overallDonutSeries}
+            /> : null
           }
         </section>
       </Fragment>

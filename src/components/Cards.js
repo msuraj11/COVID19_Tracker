@@ -2,7 +2,6 @@ import React from 'react';
 import {map, startCase} from 'lodash';
 
 const Card = ({data}) => {
-    console.log(data);
     data.DeathRate = ((data.TotalDeaths/data.TotalConfirmed)*100).toFixed(2);
     return map(data, (item, key) => {
         const colorValue = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
