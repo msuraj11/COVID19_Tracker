@@ -1,5 +1,5 @@
 import React, {Fragment, Component} from 'react';
-import {isEmpty, omit, map} from 'lodash';
+import {isEmpty, omit} from 'lodash';
 import moment from 'moment';
 import axios from 'axios';
 import { Dropdown } from "semantic-ui-react";
@@ -10,6 +10,7 @@ import Spinner from './components/Spinner';
 import PageNotFound from './components/PageNotFound';
 import WorldDataCharts from './components/WorldDataCharts';
 import {deafultBarChartOptionsObj, defaultDonutOptions} from './utils/helper';
+import CountrySpecificCharts from './components/CountrySpecificCharts';
 
 class App extends Component {
   constructor(props) {
@@ -19,6 +20,7 @@ class App extends Component {
       countryDayWise: [],
       globalData: {},
       countries: [],
+      selectedCountry: '',
       euCountries: [],
       americas: [],
       asiaPacific: [],
@@ -28,7 +30,11 @@ class App extends Component {
       overallBarChartOptions: {...deafultBarChartOptionsObj},
       overallBarChartSeries: [],
       overallDontOptions: {...defaultDonutOptions},
-      overallDonutSeries: []
+      overallDonutSeries: [],
+      countryTotalBarChartOptions: {...deafultBarChartOptionsObj},
+      countryTotalBarChartSeries: [],
+      countryTotalDontOptions: {...defaultDonutOptions},
+      countryTotalDonutSeries: []
     }
   }
 
@@ -67,7 +73,17 @@ class App extends Component {
           TotalDeaths: lastObj.Deaths,
           Recovered: lastObj.Recovered
         } : {};
-        this.setState({ countryDayWise, totalCountryData, isLoading: false, error: {} });
+        this.setState({ countryDayWise, totalCountryData, isLoading: false, error: {},
+          countryTotalBarChartOptions: {
+            ...this.state.countryTotalBarChartOptions,
+            xaxis: {
+              ...this.state.countryTotalBarChartOptions.xaxis,
+              categories: Object.keys(totalCountryData)
+            }
+          },
+          countryTotalBarChartSeries: [{ data: Object.values(totalCountryData) }],
+          countryTotalDonutSeries: Object.values(totalCountryData)
+        });
       })
       .catch(err => {
         this.setState({ isLoading: false, error: err });
@@ -90,7 +106,8 @@ class App extends Component {
   };
 
   dropDownChangeHandler = (e, {value}) => {
-    this.setState({ isLoading: true, summary: {}, globalData:{}, countryDayWise: [], totalCountryData:{} });
+    this.setState({ selectedCountry: value.toUpperCase(), isLoading: true, summary: {}, globalData:{},
+      countryDayWise: [], totalCountryData:{} });
     if (value === 'World') { 
       this.getWorldSummaryData();
     } else {
@@ -99,7 +116,7 @@ class App extends Component {
   }
   
   render() {
-    const {globalData, countries, totalCountryData, isLoading, error} = this.state;
+    const {globalData, countries, selectedCountry, totalCountryData, isLoading, error} = this.state;
     return (
       <Fragment>
         <Navbar />
@@ -134,6 +151,15 @@ class App extends Component {
               overallBarChartSeries={this.state.overallBarChartSeries}
               overallDontOptions={this.state.overallDontOptions}
               overallDonutSeries={this.state.overallDonutSeries}
+            /> : null
+          }
+          {!isEmpty(totalCountryData) ?
+            <CountrySpecificCharts
+              selectedCountry={selectedCountry}
+              countryTotalBarChartOptions={this.state.countryTotalBarChartOptions}
+              countryTotalBarChartSeries={this.state.countryTotalBarChartSeries}
+              countryTotalDontOptions={this.state.countryTotalDontOptions}
+              countryTotalDonutSeries={this.state.countryTotalDonutSeries}
             /> : null
           }
         </section>
