@@ -2,7 +2,8 @@ import React, { Fragment } from 'react';
 import Charts from 'react-apexcharts';
 
 const CountrySpecificCharts = ({countryTotalBarChartOptions, countryTotalBarChartSeries,
-    countryTotalDontOptions, countryTotalDonutSeries, selectedCountry}) => {
+    countryTotalDontOptions, countryTotalDonutSeries, selectedCountry,
+    CountryTimeSeriesChartOptions, CountryTimeSeriesChartSeries}) => {
     return (
         <Fragment>
             <h3  className="mx py-1"> {`${selectedCountry}'s overall status`}</h3>
@@ -20,6 +21,14 @@ const CountrySpecificCharts = ({countryTotalBarChartOptions, countryTotalBarChar
                     type="donut"
                     height={330}
                     width={700}
+                />
+            </div>
+            <div className="charts">
+                <Charts
+                    options={CountryTimeSeriesChartOptions}
+                    series={CountryTimeSeriesChartSeries}
+                    type="area"
+                    height={350}
                 />
             </div>
         </Fragment>

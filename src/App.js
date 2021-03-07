@@ -1,5 +1,5 @@
 import React, {Fragment, Component} from 'react';
-import {isEmpty, omit} from 'lodash';
+import {isEmpty, omit, pick} from 'lodash';
 import moment from 'moment';
 import axios from 'axios';
 import { Dropdown } from "semantic-ui-react";
@@ -9,7 +9,7 @@ import Cards from './components/Cards';
 import Spinner from './components/Spinner';
 import PageNotFound from './components/PageNotFound';
 import WorldDataCharts from './components/WorldDataCharts';
-import {deafultBarChartOptionsObj, defaultDonutOptions} from './utils/helper';
+import {deafultBarChartOptionsObj, defaultDonutOptions, defaultTimeSeriesChartOptions} from './utils/helper';
 import CountrySpecificCharts from './components/CountrySpecificCharts';
 
 class App extends Component {
@@ -34,7 +34,9 @@ class App extends Component {
       countryTotalBarChartOptions: {...deafultBarChartOptionsObj},
       countryTotalBarChartSeries: [],
       countryTotalDontOptions: {...defaultDonutOptions},
-      countryTotalDonutSeries: []
+      countryTotalDonutSeries: [],
+      CountryTimeSeriesChartOptions: {...defaultTimeSeriesChartOptions},
+      CountryTimeSeriesChartSeries: []
     }
   }
 
@@ -73,6 +75,7 @@ class App extends Component {
           TotalDeaths: lastObj.Deaths,
           Recovered: lastObj.Recovered
         } : {};
+        const pickedProps = pick(countryDayWise, ['Confirmed', 'Date']);
         this.setState({ countryDayWise, totalCountryData, isLoading: false, error: {},
           countryTotalBarChartOptions: {
             ...this.state.countryTotalBarChartOptions,
@@ -82,7 +85,12 @@ class App extends Component {
             }
           },
           countryTotalBarChartSeries: [{ data: Object.values(totalCountryData) }],
-          countryTotalDonutSeries: Object.values(totalCountryData)
+          countryTotalDonutSeries: Object.values(totalCountryData),
+          CountryTimeSeriesChartSeries: [{ data: [...pickedProps.map(item => ({
+              x: item.Date,
+              y:item.Confirmed
+            }))]
+          }]
         });
       })
       .catch(err => {
@@ -160,6 +168,8 @@ class App extends Component {
               countryTotalBarChartSeries={this.state.countryTotalBarChartSeries}
               countryTotalDontOptions={this.state.countryTotalDontOptions}
               countryTotalDonutSeries={this.state.countryTotalDonutSeries}
+              CountryTimeSeriesChartOptions={this.state.CountryTimeSeriesChartOptions}
+              CountryTimeSeriesChartSeries={this.state.CountryTimeSeriesChartSeries}
             /> : null
           }
         </section>
